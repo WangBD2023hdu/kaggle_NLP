@@ -63,7 +63,7 @@ class PadCollate_without_know:
         self.label_dim = label_dim
         # img, text_emb, text_seq, dep, word_len, token_len, label
 
-        self.tokenizer = AutoTokenizer.from_pretrained('bert-base-cased')
+        self.tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
 
     def pad_collate(self, batch):
         """

@@ -16,8 +16,7 @@ class BaseSet(Dataset):
         self.type = type  # train, val, test
         self.max_length = max_length
         self.text_path = text_path
-        with open(self.text_path) as f:
-            self.dataset = pd.read
+        self.dataset = pd.read_excel(self.text_path)
 
     def __getitem__(self, index):
         """
@@ -34,19 +33,16 @@ class BaseSet(Dataset):
             chunk_index: li
 
         """
-        sample = self.dataset[index]
-
-        # for val and test dataset, the sample[2] is hashtag label
-        if self.type == "train":
-            label = sample[2]
-            text = sample[3]
+        if self.type == "train" or self.type == "val":
+            label = self.dataset.iloc[index]["label"]
+            twitter = eval(self.dataset.iloc[index]['token_cap'])
+            dep = eval(self.dataset.iloc[index]["token_dep"])
         else:
             # label =sample[2] hashtag label
-            label = sample[3]
-            text = sample[4]
+            label = -1
+            twitter = eval(self.dataset.iloc[index]['token_cap'])
+            dep = eval(self.dataset.iloc[index]["token_dep"])
 
-        twitter = text["token_cap"]
-        dep = text["token_dep"]
         return twitter, dep, label
 
     def __len__(self):

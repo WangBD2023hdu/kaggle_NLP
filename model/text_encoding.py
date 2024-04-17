@@ -22,14 +22,12 @@ class TextEncoder(nn.Module):
         self.input_size = input_size
         self.out_size = out_size
 
-
         self.norm = nn.LayerNorm(self.out_size)
         self.linear = nn.Linear(self.out_size, 1)
         self.linear_ = nn.Linear(self.input_size, self.out_size)
 
         self.bert_model = BertModel.from_pretrained('bert-base-uncased')
-        self.lstm = nn.LSTM()
-
+        # self.lstm = nn.LSTM()
 
     def forward(self, t1, word_seq, key_padding_mask, lam=1):
         """
@@ -44,12 +42,12 @@ class TextEncoder(nn.Module):
             score: (N,L1,D). The importance of each word or np. For convenience, expand the tensor (N,L1，D) to compute
             the caption embedding.
         """
-        #(batch_size, sequence_length, hidden_size)
+        # (batch_size, sequence_length, hidden_size)
         t1 = self.bert_model(**t1)[0]
         # (batch_size, hidden_size) may averaging or pooling
         cls_token = t1[:,0,:]
         # concatenate to np and words
-        t1 = t1[:,1:-1,:]
+        t1 = t1[:, 1:-1, :]
         captions = []
         for i in range(t1.size(0)):
             # [X,L,H] X is the number of np and word
@@ -64,6 +62,6 @@ class TextEncoder(nn.Module):
         score = self.linear(t1).squeeze().masked_fill_(key_padding_mask, float("-Inf"))
         # N,L,L distance (0,2)
         # (N, L, D)
-        score = nn.Softmax(dim=1)(score*lam).unsqueeze(2).repeat((1,1,self.out_size))
+        score = nn.Softmax(dim=1)(score*lam).unsqueeze(2).repeat((1, 1, self.out_size))
 
         return t1, score

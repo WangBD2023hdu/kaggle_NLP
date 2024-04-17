@@ -19,7 +19,7 @@ from utils.data_utils import seed_everything
 from model.Classifer import GCNClassifer
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+os.environ['CUDA_VISIBLE_DEVICES'] = "3"
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 seed_everything(42)
@@ -41,10 +41,9 @@ with open(args.para) as f:
 
 annotation_files = parameter['annotation_files']
 
-model = GCNClassifer(txt_input_dim=parameter["txt_input_dim"], txt_out_size=parameter["txt_out_size"],
+model = GCNClassifer(txt_input_size=parameter["txt_input_dim"], txt_out_size=parameter["txt_out_size"],
                                 txt_gat_layer=parameter["txt_gat_layer"], txt_gat_drop=parameter["txt_gat_drop"],
-                                txt_gat_head=parameter["txt_gat_head"],
-                                txt_self_loops=parameter["txt_self_loops"])
+                                txt_gat_head=parameter["txt_gat_head"])
 
 model.to(device=device)
 # 0.05
@@ -80,10 +79,10 @@ def train_model(epoch, train_loader):
     real_label = []
 
     for batch_idx, (encoded_cap, word_spans, mask_batch1, edge_cap1, labels) in enumerate(tqdm(train_loader)):
-        embed_batch1 = {k: v.to(device) for k, v in embed_batch1.items()}
+        encoded_cap = {k: v.to(device) for k, v in encoded_cap.items()}
         with torch.set_grad_enabled(True):
-            y = model(texts=encoded_cap, mask_batch=mask_batch1.cuda(),
-                        t1_word_seq=word_spans.cuda(), txt_edge_index=edge_cap1.cuda())
+            y = model(encoded_cap=encoded_cap, word_spans=word_spans, mask_batch1=mask_batch1.cuda(),
+                       edge_cap1=edge_cap1)
 
             loss = cross_entropy_loss(y, labels.cuda())
             loss.backward()
@@ -115,9 +114,9 @@ def eval_validation_loss(val_loader):
     model.eval()
     with torch.no_grad():
         for batch_idx, (encoded_cap, word_spans, mask_batch1, edge_cap1, labels) in enumerate(tqdm(val_loader)):
-            embed_batch1 = {k: v.to(device) for k, v in embed_batch1.items()}
-            y = model(texts=encoded_cap, mask_batch=mask_batch1.cuda(),
-                    t1_word_seq=word_spans.cuda(), txt_edge_index=edge_cap1.cuda())
+            encoded_cap = {k: v.to(device) for k, v in encoded_cap.items()}
+            y = model(encoded_cap=encoded_cap, word_spans=word_spans, mask_batch1=mask_batch1.cuda(),
+                       edge_cap1=edge_cap1)
 
             loss = cross_entropy_loss(y, labels.cuda())
             val_loss += float(loss.clone().detach().item())
@@ -151,9 +150,9 @@ def evaluate_model(epoch, val_loader):
 
     with torch.no_grad():
         for batch_idx, (encoded_cap, word_spans, mask_batch1, edge_cap1, labels) in enumerate(tqdm(val_loader)):
-            embed_batch1 = {k: v.to(device) for k, v in embed_batch1.items()}
-            y = model(texts=encoded_cap, mask_batch=mask_batch1.cuda(),
-                    t1_word_seq=word_spans.cuda(), txt_edge_index=edge_cap1.cuda())
+            encoded_cap = {k: v.to(device) for k, v in encoded_cap.items()}
+            y = model(encoded_cap=encoded_cap, word_spans=word_spans, mask_batch1=mask_batch1.cuda(),
+                       edge_cap1=edge_cap1)
 
             loss = cross_entropy_loss(y, labels.cuda())
             val_loss += float(loss.clone().detach().item())
@@ -191,9 +190,9 @@ def evaluate_model_test(epoch, test_loader):
     model.eval()
     with torch.no_grad():
         for batch_idx, (encoded_cap, word_spans, mask_batch1, edge_cap1, labels) in enumerate(tqdm(test_loader)):
-            embed_batch1 = {k: v.to(device) for k, v in embed_batch1.items()}
-            y = model(texts=encoded_cap, mask_batch=mask_batch1.cuda(),
-                    t1_word_seq=word_spans.cuda(), txt_edge_index=edge_cap1.cuda())
+            encoded_cap = {k: v.to(device) for k, v in encoded_cap.items()}
+            y = model(encoded_cap=encoded_cap, word_spans=word_spans, mask_batch1=mask_batch1.cuda(),
+                       edge_cap1=edge_cap1)
 
             loss = cross_entropy_loss(y, labels.cuda())
             test_loss += float(loss.clone().detach().item())
@@ -235,10 +234,10 @@ def test_match_accuracy(val_loader):
 
         with torch.no_grad():
             for batch_idx, (encoded_cap, word_spans, mask_batch1, edge_cap1, labels) in enumerate(tqdm(val_loader)):
-                embed_batch1 = {k: v.to(device) for k, v in embed_batch1.items()}
+                encoded_cap = {k: v.to(device) for k, v in encoded_cap.items()}
                 with torch.no_grad():
-                    y = model(texts=encoded_cap, mask_batch=mask_batch1.cuda(),
-                            t1_word_seq=word_spans.cuda(), txt_edge_index=edge_cap1.cuda())
+                    y = model(encoded_cap=encoded_cap, word_spans=word_spans, mask_batch1=mask_batch1.cuda(),
+                              edge_cap1=edge_cap1)
                     loss = cross_entropy_loss(y, labels.cuda())
                     val_loss += float(loss.clone().detach().item())
                 predict = predict + get_metrics(y.cpu())
@@ -261,14 +260,10 @@ def test_match_accuracy(val_loader):
 
 def main():
     if args.mode == 'train':
-        print("flag")
-        # annotation_train = os.path.join(annotation_files, "trainknow.json")
-        # annotation_val = os.path.join(annotation_files, "valknow.json")
-        # annotation_test = os.path.join(annotation_files, "testknow.json")
-        
-        annotation_train = os.path.join(annotation_files, "traindep.json")
-        annotation_val = os.path.join(annotation_files, "valdep.json")
-        annotation_test = os.path.join(annotation_files, "testdep.json")
+        # TODO
+        annotation_train = os.path.join(annotation_files, "for_model_train.xlsx")
+        annotation_val = os.path.join(annotation_files, "for_model_val.xlsx")
+        annotation_test = os.path.join(annotation_files, "for_model_test.xlsx")
 
         train_dataset = BaseSet(type="train", max_length=parameter["max_length"], text_path=annotation_train)
         val_dataset = BaseSet(type="val", max_length=parameter["max_length"], text_path=annotation_val)
@@ -345,6 +340,5 @@ def main():
 
 
 if __name__ == "__main__":
-    print("12")
     main()
     # seed_everything(42)
