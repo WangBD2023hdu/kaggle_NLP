@@ -17,7 +17,7 @@ class BaseSet(Dataset):
         self.max_length = max_length
         self.text_path = text_path
         with open(self.text_path) as f:
-            self.dataset = json.load(f)
+            self.dataset = pd.read
 
     def __getitem__(self, index):
         """

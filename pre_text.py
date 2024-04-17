@@ -60,7 +60,7 @@ def token_dependency(dataset, type="train"):
         
         dataset_article_a["chunk"] = [temp[0] for temp in dataset_article["chunk"]]
         dataset_article_a["chunk_index"] = [token_map[temp[1]] for temp in dataset_article["chunk"]]
-        if "test"!=type
+        if "test"!=type:
             dataset_article_a["label"] = dataset.iloc[index]["target"]
         res.append(dataset_article_a)
     return res
