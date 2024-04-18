@@ -17,6 +17,7 @@ class BaseSet(Dataset):
         self.max_length = max_length
         self.text_path = text_path
         self.dataset = pd.read_excel(self.text_path)
+        self.label_eye = torch.eye(2)
 
     def __getitem__(self, index):
         """
@@ -34,12 +35,13 @@ class BaseSet(Dataset):
 
         """
         if self.type == "train" or self.type == "val":
-            label = self.dataset.iloc[index]["label"]
+            label = int(self.dataset.iloc[index]["label"])
+            label = self.label_eye[label]
             twitter = eval(self.dataset.iloc[index]['token_cap'])
             dep = eval(self.dataset.iloc[index]["token_dep"])
         else:
             # label =sample[2] hashtag label
-            label = -1
+            label = self.label_eye[0]
             twitter = eval(self.dataset.iloc[index]['token_cap'])
             dep = eval(self.dataset.iloc[index]["token_dep"])
 

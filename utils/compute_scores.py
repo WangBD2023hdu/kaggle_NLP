@@ -16,8 +16,9 @@ def get_metrics(y):
         Returns:
             predict_label (list): predict results
     """
-    predict_label = (y[:,0]<y[:,1]).clone().detach().long().numpy().tolist()
+    predict_label = y.max(dim=1)[1].cpu().numpy().tolist()
     return predict_label
+
 
 def get_four_metrics(labels, predicted_labels):
     confusion = metrics.confusion_matrix(labels, predicted_labels)
@@ -27,7 +28,7 @@ def get_four_metrics(labels, predicted_labels):
     recall = confusion[1][1]/(confusion[1][1]+confusion[1][0])
     precision = confusion[1][1]/(confusion[1][1]+confusion[0][1])
     f1 = 2*recall*precision/(recall+precision)
-    return acc,recall,precision,f1
+    return acc, recall, precision, f1
 
 
 def L2_Norm(a1, a2):

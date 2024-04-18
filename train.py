@@ -19,7 +19,7 @@ from utils.data_utils import seed_everything
 from model.Classifer import GCNClassifer
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-os.environ['CUDA_VISIBLE_DEVICES'] = "3"
+os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 seed_everything(42)
@@ -83,17 +83,20 @@ def train_model(epoch, train_loader):
         with torch.set_grad_enabled(True):
             y = model(encoded_cap=encoded_cap, word_spans=word_spans, mask_batch1=mask_batch1.cuda(),
                        edge_cap1=edge_cap1)
-
-            loss = cross_entropy_loss(y, labels.cuda())
+            loss = cross_entropy_loss(y, labels.cuda().max(dim=1)[1])
             loss.backward()
             train_loss += float(loss.detach().item())
             optimizer.step()
             optimizer.zero_grad()  # clear gradients for this training step
-        predict = predict + get_metrics(y.cpu())
-        real_label = real_label + labels.cpu().numpy().tolist()
+        predict = predict + y.max(dim=1)[1].cpu().numpy().tolist()
+        real_label = real_label + labels.max(dim=1)[1].cpu().numpy().tolist()
         total += len(encoded_cap)
         torch.cuda.empty_cache()
-        del embed_batch1
+    print(predict)
+    print("="*10)
+    print(real_label)
+    print(len(predict))
+    print(len(real_label))
     # Calculate loss and accuracy for current epoch
     logger.log(mode="train", scalar_value=train_loss / len(train_loader), epoch=epoch, scalar_name='loss')
     acc, recall, precision, f1 = get_four_metrics(real_label, predict)
@@ -118,12 +121,12 @@ def eval_validation_loss(val_loader):
             y = model(encoded_cap=encoded_cap, word_spans=word_spans, mask_batch1=mask_batch1.cuda(),
                        edge_cap1=edge_cap1)
 
-            loss = cross_entropy_loss(y, labels.cuda())
+            loss = cross_entropy_loss(y, labels.cuda().max(dim=1)[1])
             val_loss += float(loss.clone().detach().item())
-            predict = predict + get_metrics(y.cpu())
-            real_label = real_label + labels.cpu().numpy().tolist()
+            predict = predict + y.max(dim=1)[1].cpu().numpy().tolist()
+            real_label = real_label + labels.max(dim=1)[1].cpu().numpy().tolist()
             torch.cuda.empty_cache()
-            del embed_batch1
+
 
         acc, recall, precision, f1 = get_four_metrics(real_label, predict)
         print(' Val Avg loss: {:.4f} Acc: {:.4f} Rec: {:.4f} Pre: {:.4f} F1: {:.4f}'.format(val_loss / len(val_loader),
@@ -154,12 +157,12 @@ def evaluate_model(epoch, val_loader):
             y = model(encoded_cap=encoded_cap, word_spans=word_spans, mask_batch1=mask_batch1.cuda(),
                        edge_cap1=edge_cap1)
 
-            loss = cross_entropy_loss(y, labels.cuda())
+            loss = cross_entropy_loss(y, labels.cuda().max(dim=1)[1])
             val_loss += float(loss.clone().detach().item())
-            predict = predict + get_metrics(y.cpu())
-            real_label = real_label + labels.cpu().numpy().tolist()
+            predict = predict + y.max(dim=1)[1].cpu().numpy().tolist()
+            real_label = real_label + labels.max(dim=1)[1].cpu().numpy().tolist()
             torch.cuda.empty_cache()
-            del embed_batch1
+
 
         acc, recall, precision, f1 = get_four_metrics(real_label, predict)
 
@@ -194,12 +197,11 @@ def evaluate_model_test(epoch, test_loader):
             y = model(encoded_cap=encoded_cap, word_spans=word_spans, mask_batch1=mask_batch1.cuda(),
                        edge_cap1=edge_cap1)
 
-            loss = cross_entropy_loss(y, labels.cuda())
+            loss = cross_entropy_loss(y, labels.cuda().max(dim=1)[1])
             test_loss += float(loss.clone().detach().item())
-        predict = predict + get_metrics(y.cpu())
-        real_label = real_label + labels.cpu().numpy().tolist()
+        predict = predict + y.max(dim=1)[1].cpu().numpy().tolist()
+        real_label = real_label + labels.max(dim=1)[1].cpu().numpy().tolist()
         torch.cuda.empty_cache()
-        del embed_batch1
 
     acc, recall, precision, f1 = get_four_metrics(real_label, predict)
 
@@ -238,10 +240,10 @@ def test_match_accuracy(val_loader):
                 with torch.no_grad():
                     y = model(encoded_cap=encoded_cap, word_spans=word_spans, mask_batch1=mask_batch1.cuda(),
                               edge_cap1=edge_cap1)
-                    loss = cross_entropy_loss(y, labels.cuda())
+                    loss = cross_entropy_loss(y, labels.cuda().max(dim=1)[1])
                     val_loss += float(loss.clone().detach().item())
-                predict = predict + get_metrics(y.cpu())
-                real_label = real_label + labels.cpu().numpy().tolist()
+                predict = predict + y.max(dim=1)[1].cpu().numpy().tolist()
+                real_label = real_label + labels.max(dim=1)[1].cpu().numpy().tolist()
                 pv_list.append(pv.cpu().clone().detach())
                 a_list.append(a.cpu().clone().detach())
                 torch.cuda.empty_cache()

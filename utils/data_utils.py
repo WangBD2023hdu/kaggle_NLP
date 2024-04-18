@@ -117,7 +117,8 @@ class PadCollate_without_know:
 
         org_chunk = [torch.arange(i, dtype=torch.long) for i in word_len]
 
-        labels = torch.tensor(list(map(lambda t: t[self.label_dim], batch)), dtype=torch.long)
+        labels = torch.stack(list(map(lambda t: t[self.label_dim], batch)))
+        labels = labels.long()
         edge_cap1, gnn_mask_1, np_mask_1 = construct_edge_text(deps=deps1_, max_length=max_len1, use_np=False,
                                                                chunk=org_chunk)
 
