@@ -2,7 +2,9 @@ import torch
 import pandas as pd
 from torch.utils.data import Dataset
 import json
-
+import random
+from nltk.corpus import stopwords
+stop_words = stopwords.words('english')
 class BaseSet(Dataset):
     def __init__(self, type="train", max_length=100, text_path=None):
         """
@@ -38,11 +40,13 @@ class BaseSet(Dataset):
             label = int(self.dataset.iloc[index]["label"])
             label = self.label_eye[label]
             twitter = eval(self.dataset.iloc[index]['token_cap'])
+            twitter = [word for word in twitter+["UNK"] if word not in stop_words]
             dep = eval(self.dataset.iloc[index]["token_dep"])
         else:
             # label =sample[2] hashtag label
-            label = self.label_eye[0]
+            label = self.label_eye[random.randint(0, 1)]
             twitter = eval(self.dataset.iloc[index]['token_cap'])
+            twitter = [word for word in twitter+['UNK'] if word not in stop_words]
             dep = eval(self.dataset.iloc[index]["token_dep"])
 
         return twitter, dep, label

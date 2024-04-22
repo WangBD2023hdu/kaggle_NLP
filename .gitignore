@@ -1,3 +1,13 @@
 /text/
 /__pycharm__/
 *.log
+*.xlsx
+*.csv
+__pycache__/
+/metrics/
+/bert-base-uncased/
+/saved_model\ path/
+/models/
+/best_model/
+/result/
+/twitter-roberta-base-sentiment-latest/

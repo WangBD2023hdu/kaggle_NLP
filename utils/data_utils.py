@@ -5,7 +5,7 @@ import random
 import numpy as np
 
 from transformers import AutoTokenizer
-
+from transformers import RobertaTokenizerFast
 
 def read_json(path):
     """
@@ -63,7 +63,8 @@ class PadCollate_without_know:
         self.label_dim = label_dim
         # img, text_emb, text_seq, dep, word_len, token_len, label
 
-        self.tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+        self.tokenizer = RobertaTokenizerFast.from_pretrained('twitter-roberta-base-sentiment-latest')
+        self.tokenizer.add_prefix_space = True
 
     def pad_collate(self, batch):
         """

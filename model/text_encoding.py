@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence, pad_sequence
 import math
-from utils import L2_norm, cosine_distance
-from transformers import BertModel
+from utils.compute_scores import L2_norm, cosine_distance
+from transformers import RobertaModel
 from utils.data_utils import pad_tensor
 
 class TextEncoder(nn.Module):
@@ -22,11 +22,14 @@ class TextEncoder(nn.Module):
         self.input_size = input_size
         self.out_size = out_size
 
+        self.norm_1 = nn.LayerNorm(self.input_size)
         self.norm = nn.LayerNorm(self.out_size)
         self.linear = nn.Linear(self.out_size, 1)
         self.linear_ = nn.Linear(self.input_size, self.out_size)
 
-        self.bert_model = BertModel.from_pretrained('bert-base-uncased')
+        self.bert_model = RobertaModel.from_pretrained('twitter-roberta-base-sentiment-latest')
+        for para in self.bert_model.parameters():
+            para.requires_grad = False
         # self.lstm = nn.LSTM()
 
     def forward(self, t1, word_seq, key_padding_mask, lam=1):
@@ -54,7 +57,9 @@ class TextEncoder(nn.Module):
             captions.append(torch.stack([torch.mean(t1[i][tup[0]:tup[1], :], dim=0) for tup in word_seq[i]]))
 
         # (N,L,D)
+
         t1 = pad_sequence(captions, batch_first=True).cuda()
+        t1 = self.norm_1(t1)
         t1 = self.norm(self.linear_(t1))
         # get each word importance
         # (N,L)

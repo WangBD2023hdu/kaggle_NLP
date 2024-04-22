@@ -8,7 +8,7 @@ import torch.optim as optim
 import torch
 from torch.nn import CrossEntropyLoss
 import numpy as np
-
+import pandas as pd
 from utils.data_utils import construct_edge_image
 from utils.dataset import BaseSet
 from utils.compute_scores import get_metrics, get_four_metrics
@@ -19,7 +19,7 @@ from utils.data_utils import seed_everything
 from model.Classifer import GCNClassifer
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-os.environ['CUDA_VISIBLE_DEVICES'] = "1"
+os.environ['CUDA_VISIBLE_DEVICES'] = "2"
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 seed_everything(42)
@@ -47,11 +47,13 @@ model = GCNClassifer(txt_input_size=parameter["txt_input_dim"], txt_out_size=par
 
 model.to(device=device)
 # 0.05
-optimizer = optim.Adam(params=model.parameters(), lr=parameter["lr"], betas=(0.9, 0.999), eps=1e-8,
-                       weight_decay=parameter["weight_decay"],
-                       amsgrad=True)
+# optimizer = optim.Adam(params=model.parameters(), lr=parameter["lr"], betas=(0.9, 0.999), eps=1e-8,
+#                        weight_decay=parameter["weight_decay"],
+#                        amsgrad=True)
+
+optimizer = optim.SGD(params=model.parameters(), lr=parameter['lr'], momentum=0.001, weight_decay=parameter["weight_decay"])
+
 scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=parameter["patience"], verbose=True)
-# optimizer = optim.Adam(params=model.parameters(), lr=parameter["lr"], betas=(0.9, 0.999), eps=1e-8, weight_decay=0, amsgrad=True)
 
 cross_entropy_loss = CrossEntropyLoss()
 # cross_entropy_loss = CrossEntropyLoss(weight=torch.tensor([1,1.1]).cuda())
@@ -92,11 +94,7 @@ def train_model(epoch, train_loader):
         real_label = real_label + labels.max(dim=1)[1].cpu().numpy().tolist()
         total += len(encoded_cap)
         torch.cuda.empty_cache()
-    print(predict)
-    print("="*10)
-    print(real_label)
-    print(len(predict))
-    print(len(real_label))
+
     # Calculate loss and accuracy for current epoch
     logger.log(mode="train", scalar_value=train_loss / len(train_loader), epoch=epoch, scalar_name='loss')
     acc, recall, precision, f1 = get_four_metrics(real_label, predict)
@@ -199,12 +197,12 @@ def evaluate_model_test(epoch, test_loader):
 
             loss = cross_entropy_loss(y, labels.cuda().max(dim=1)[1])
             test_loss += float(loss.clone().detach().item())
-        predict = predict + y.max(dim=1)[1].cpu().numpy().tolist()
-        real_label = real_label + labels.max(dim=1)[1].cpu().numpy().tolist()
-        torch.cuda.empty_cache()
-
+            predict = predict + y.max(dim=1)[1].cpu().numpy().tolist()
+            real_label = real_label + labels.max(dim=1)[1].cpu().numpy().tolist()
+            torch.cuda.empty_cache()
+    data = pd.DataFrame(predict)
+    data.to_excel(f"result_{epoch}.xlsx")
     acc, recall, precision, f1 = get_four_metrics(real_label, predict)
-
     logger.log(mode="test", scalar_value=test_loss / len(test_loader), epoch=epoch, scalar_name='loss')
     logger.log(mode="test", scalar_value=acc, epoch=epoch, scalar_name='accuracy')
     print(' Test Epoch: {} Avg loss: {:.4f} Acc: {:.4f}  Rec: {:.4f} Pre: {:.4f} F1: {:.4f}'.format(epoch,
@@ -247,7 +245,7 @@ def test_match_accuracy(val_loader):
                 pv_list.append(pv.cpu().clone().detach())
                 a_list.append(a.cpu().clone().detach())
                 torch.cuda.empty_cache()
-                del img_batch, embed_batch1
+
             acc, recall, precision, f1 = get_four_metrics(real_label, predict)
             save_result = {"real_label": real_label, 'predict_label': predict, "pv_list": pv_list,
                             " a_list": a_list}
@@ -277,10 +275,10 @@ def main():
         print("training dataset has been loaded successful!")
         val_loader = DataLoader(dataset=val_dataset, batch_size=parameter["batch_size"], num_workers=4,
                                 shuffle=True,
-                                collate_fn=PadCollate_without_know())
+                                collate_fn=PadCollate_without_know(), drop_last=True)
         print("validation dataset has been loaded successful!")
         test_loader = DataLoader(dataset=test_dataset, batch_size=parameter["batch_size"], num_workers=4,
-                                    shuffle=True,
+                                    shuffle=False,
                                     collate_fn=PadCollate_without_know())
         print("test dataset has been loaded successful!")
 

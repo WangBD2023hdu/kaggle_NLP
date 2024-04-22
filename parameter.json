@@ -1,0 +1,27 @@
+{
+  "BASE_DIR" : "/home/wbd/source_code/kaggle_NLP",
+  "DATA_DIR" : "/home/wbd/source_code/kaggle_NLP/text",
+  "TARGET_DIR" : "/home/wbd/source_code/kaggle_NLP/result",
+  "annotation_files" : "/home/wbd/source_code/kaggle_NLP/text",
+  "model_name" : "kaggle",
+  "patience" : 5,
+  "batch_size" : 32,
+  "epochs" : 400,
+  "max_length":100,
+  "use_np": false,
+  "seed": 42,
+  "weight_decay" : 0.05,
+
+
+  "lr" : 5e-6,
+
+
+  "txt_input_dim" : 768,
+  "txt_out_size" : 350,
+
+
+  "txt_gat_layer" : 3,
+  "txt_gat_drop" : 0.1,
+  "txt_gat_head" : 4,
+  "txt_self_loops" : true
+}
